@@ -1,0 +1,1 @@
+insert into room(id, room_number) values(30, 39);

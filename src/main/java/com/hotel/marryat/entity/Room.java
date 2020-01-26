@@ -2,6 +2,7 @@ package com.hotel.marryat.entity;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.*;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
 @Table(name = "room")
 @Getter
 @Setter
+@ToString(exclude = {"bookings"})
 public class Room {
 
     @Id
