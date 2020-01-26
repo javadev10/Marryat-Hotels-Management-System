@@ -4,6 +4,7 @@ import com.hotel.marryat.converter.ReservationConverter;
 import com.hotel.marryat.dto.NewReservationDto;
 import com.hotel.marryat.dto.ReservationDto;
 import com.hotel.marryat.dto.ReservationFilterDto;
+import com.hotel.marryat.dto.UpdateReservationDto;
 import com.hotel.marryat.entity.Booking;
 import com.hotel.marryat.entity.Room;
 import com.hotel.marryat.exception.MarryatException;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,23 +36,21 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public ReservationDto addNewReservation(NewReservationDto newReservation) {
-        Optional<Booking> existingBooking = bookingRepository.findByRoomWithinDateRange(newReservation.getRoomId(), newReservation.getArrivalDate(), newReservation.getDepartureDate());
-        if(existingBooking.isPresent()) {
-            throw new MarryatException("Already booked from " + newReservation.getArrivalDate() + " till " + newReservation.getDepartureDate());
+        List<Booking> existingBookings = bookingRepository.findByRoomWithinDateRange(newReservation.getRoomId(), newReservation.getArrivalDate(), newReservation.getDepartureDate());
+        if(!existingBookings.isEmpty()) {
+            throw new MarryatException("Already booked by " + existingBookings);
         }
         Booking booking = reservationConverter.convertOneNewDtoToEntity(newReservation);
-        Room room = roomRepository.findById(newReservation.getRoomId())
-                .orElseThrow(()->new MarryatException("No room found with id " + newReservation.getRoomId()));
-        booking.setRoom(room);
+        booking.setRoom(getRoom(newReservation.getRoomId()));
         bookingRepository.save(booking);
         log.info("Added new reservation {}", booking);
         return reservationConverter.convertOneToDto(booking);
     }
 
     @Override
-    public ReservationDto deleteReservation(Long reservationId) {
-        Booking booking = bookingRepository.findById(reservationId).orElseThrow(()->new MarryatException("No reservation found with id " + reservationId));
-        log.info("Delete booking {}", reservationId);
+    public ReservationDto deleteReservation(Long bookingId) {
+        Booking booking = getBooking(bookingId);
+        log.info("Delete booking {}", bookingId);
         ReservationDto deletedReservation = reservationConverter.convertOneToDto(booking);
         booking.setRoom(null);
         bookingRepository.delete(booking);
@@ -59,12 +58,25 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public ReservationDto updateReservation(ReservationDto reservationDto) {
-        Long bookingId = reservationDto.getReservationId();
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(()->new MarryatException("No reservation found with id " + bookingId));
-        if(reservationDto.getArrivalDate() != null) booking.setStartDate(reservationDto.getArrivalDate());
-        if(reservationDto.getDepartureDate() != null) booking.setEndDate(reservationDto.getDepartureDate());
+    public ReservationDto updateReservation(Long bookingId, UpdateReservationDto reservationDto) {
+        Booking booking = getBooking(bookingId);
+        List<Booking> foundBookings = bookingRepository.findByRoomWithinDateRange(reservationDto.getRoomId(), reservationDto.getArrivalDate(), reservationDto.getDepartureDate());
+        List<Booking> existingBookings = foundBookings.stream().filter(b-> !b.getId().equals(bookingId)).collect(Collectors.toList());
+        if(!existingBookings.isEmpty()) {
+            throw new MarryatException("Already booked by " + existingBookings);
+        }
+        booking.setRoom(getRoom(reservationDto.getRoomId()));
+        booking.setStartDate(reservationDto.getArrivalDate());
+        booking.setEndDate(reservationDto.getDepartureDate());
         log.info("Update reservation {}", booking);
         return reservationConverter.convertOneToDto(booking);
+    }
+
+    private Room getRoom(Integer roomId) {
+       return roomRepository.findById(roomId).orElseThrow(()->new MarryatException("No room found with id " + roomId));
+    }
+
+    private Booking getBooking(Long bookingId) {
+        return bookingRepository.findById(bookingId).orElseThrow(()->new MarryatException("No booking found with id " + bookingId));
     }
 }
