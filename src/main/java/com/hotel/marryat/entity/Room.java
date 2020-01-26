@@ -16,7 +16,7 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "room_number", nullable = false)
+    @Column(name = "room_number", nullable = false, unique = true)
     private Integer roomNumber;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

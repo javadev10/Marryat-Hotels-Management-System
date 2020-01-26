@@ -1,3 +1,5 @@
+alter table booking add constraint dates_check check (end_date >= start_date);
+
 insert into room(id, room_number) values(1, 23);
 insert into room(id, room_number) values(2, 27);
 insert into room(id, room_number) values(3, 28);

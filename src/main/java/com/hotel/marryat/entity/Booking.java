@@ -1,7 +1,6 @@
 package com.hotel.marryat.entity;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -10,6 +9,10 @@ import java.time.LocalDate;
 @Table(name = "booking")
 @Getter
 @Setter
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor
+@ToString
 public class Booking {
 
     @Id
@@ -22,7 +25,7 @@ public class Booking {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @ManyToOne(cascade = {})
+    @ManyToOne
     @JoinColumn(name = "room_id",  nullable = false)
     private Room room;
 }
